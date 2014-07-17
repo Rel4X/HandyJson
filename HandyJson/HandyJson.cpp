@@ -24,6 +24,9 @@
 	Purpose :
 	HandyJson is a very easy to use single class, based on cJSON, to parse and build JSON data.
 */
+/*
+	Thanks to Dave Gamble.
+*/
 
 #include				"HandyJson.h"
 

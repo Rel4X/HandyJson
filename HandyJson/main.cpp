@@ -40,7 +40,7 @@ bool			HandlingHandyJsonItems()
 
 	/*
 		+------------------------------+
-		| Printing the HandyJison tree |
+		| Printing the HandyJson tree |
 		+------------------------------+
 											*/
 	std::cout << root.Print() << std::endl;
@@ -132,13 +132,18 @@ bool			BuildingHandyJsonTree()
 	HandyJson*		new_string;
 	new_string = new HandyJson();
 	new_string->BuildInString("Hello Corsica !");
+	std::cout << new_string->Print() << std::endl;	// Printing the node.
+	std::cout << std::endl;
 
 	/*
 		+------------------------------+
 		| Adding it to the root object |
 		+------------------------------+
 											*/
-	root->AddItemToObject("First Item", new_string);
+	if (root->AddItemToObject("First Item", new_string) == true)
+		std::cout << "Item added to object" << std::endl;
+	{ std::cout << "Item not added to object." << std::endl; return (false); }
+	std::cout << std::endl;
 
 	/*
 		+-------------------------------------+
@@ -147,8 +152,9 @@ bool			BuildingHandyJsonTree()
 												*/
 	HandyJson*		new_array = new HandyJson(HandyJson::eTypes::json_array);
 	if (root->AddItemToObject("Array", new_array))
-		std::cout << "Item added to object." << std::endl;
-	else { std::cout << "Item not added to object." << std::endl; return (false); }
+		std::cout << "Array added to object." << std::endl;
+	else { std::cout << "Array not added to object." << std::endl; return (false); }
+	std::cout << std::endl;
 	
 	/*
 		+----------------------------------------------------+
@@ -157,6 +163,8 @@ bool			BuildingHandyJsonTree()
 																*/
 	int			int_tab[5] = { 0, 1, 2, 3, 4 };
 	new_array->BuildInIntArray(int_tab, 5);
+	std::cout << "Array items built." << std::endl;
+	std::cout << std::endl;
 
 	/*
 		+--------------------+
@@ -167,7 +175,8 @@ bool			BuildingHandyJsonTree()
 	duplication = new_array->Duplicate(true);			// The boolean parameter specify if the duplication is
 														// recursive or not.
 	root->AddItemToObject("Duplication", duplication);
-
+	std::cout << "Node duplicated, and added to root." << std::endl;
+	std::cout << std::endl;
 
 	/*
 		+------------------------------+
@@ -177,7 +186,10 @@ bool			BuildingHandyJsonTree()
 	HandyJson*		new_item;
 	new_item = new HandyJson();
 	new_item->BuildInNumber(42);
-	new_array->AddItemToArray(new_item);
+	if (new_array->AddItemToArray(new_item) == true)
+	{ std::cout << "Item added in array." << std::endl; }
+	else { std::cout << "Item not added to array" << std::endl; return (false); }
+	std::cout << std::endl;
 	
 	/*
 		+------------------------------------+
@@ -185,6 +197,7 @@ bool			BuildingHandyJsonTree()
 		+------------------------------------+
 												*/
 	new_array->DeleteItemFromArray(0);
+	std::cout << std::endl;
 
 
 
