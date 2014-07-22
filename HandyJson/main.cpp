@@ -205,10 +205,6 @@ bool			BuildingHandyJsonTree()
 	return (true);
 }
 
-
-// Fonction qui check la validite d un item au print.
-// Verifier a chaque changement de type d une node que les valeurs sont maj correctement (genre dans les buildin).
-// Virer le milliard de warning
 // Tester les detach
 // Tester le replace
 int				main(int ac, char** av)
