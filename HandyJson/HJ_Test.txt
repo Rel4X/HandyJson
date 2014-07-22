@@ -1,0 +1,52 @@
+{
+	"String" : "String Value",
+	"Int" : 42,
+	"Double" : 4.2,
+	"String Array" :
+		[
+			"Hello", "world", "I", "Love", "Corsica"
+		],
+	"Int Array" :
+		[
+			1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+		],
+	"Double Array" :
+		[
+			2.3, 4.5, 6.7, 8.9
+		],
+	"Array Array" :
+		[
+			["Array One Index One", "Array One Index Two"],
+			["Array Two Index One", "Array Two Index Two"],
+			["Array Three Index One", "Array Three Index Two"]
+		],
+	"Multi types array" :
+		[
+			1, "Two", 3.0
+		],
+	"Object" :
+		{
+			"Pair One" : "One",
+			"Pair Two" : 2,
+			"Pair Three" : 3.0,
+			"Pair Four" :
+				[
+					10, 20, 30, 40, 50
+				]
+		},
+	"Object Array" :
+		[
+			{
+				"Object One Pair One" : 100,
+				"Object One Pair Two" : 200
+			},
+			{
+				"Object Two Pair One" : 1000,
+				"Object Two Pair Two" : 2000
+			},
+			{
+				"Object Three Pair One" : 10000,
+				"Object Three Pair Two" : 20000
+			}
+		]
+}

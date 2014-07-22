@@ -24,9 +24,8 @@
 	Purpose :
 	HandyJson is a very easy to use single class, based on cJSON, to parse and build JSON data.
 */
-/*
-	Thanks to Dave Gamble.
-*/
+
+/* Version 1.0 */
 
 #pragma once
 
@@ -86,10 +85,10 @@ public:
 
 public:
 	/* Basics setters */
-	void				SetName(const char*);		//
-	void				SetValStr(const char*);		// Set stuff.
-	void				SetValInt(int);				//
-	void				SetValDbl(double);			//
+	bool				SetName(const char*);		//
+	bool				SetValStr(const char*);		// Set stuff.
+	bool				SetValInt(int);				//
+	bool				SetValDbl(double);			//
 
 public:
 	/* Main functions */

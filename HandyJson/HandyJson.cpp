@@ -24,9 +24,8 @@
 	Purpose :
 	HandyJson is a very easy to use single class, based on cJSON, to parse and build JSON data.
 */
-/*
-	Thanks to Dave Gamble.
-*/
+
+/* Version 1.0 */
 
 #include				"HandyJson.h"
 
@@ -69,44 +68,51 @@ HandyJson::HandyJson(const HandyJson& hj)
 HandyJson::~HandyJson(void)
 {
 	if (this->p_child) delete (this->p_child);	// Think about setting null pointers.
-	if (this->p_value_as_str) free(this->p_value_as_str);
-	if (this->p_name) free(this->p_name);
+	if (this->p_value_as_str) delete (this->p_value_as_str);
+	if (this->GetName()) delete (this->p_name);
 	if (this->GetNext())
-		delete (this->p_next);
+		delete (this->GetNext());
 }
 
 /* Basics setters */
-void			HandyJson::SetName(const char* n)
+bool			HandyJson::SetName(const char* n)
 {
 	if (!n)
-		return ;
-	if (this->p_name)
+		return (false);
+	if (this->GetName())
 	{
-		free(this->p_name);
+		delete (this->p_name);
 		this->p_name = this->StrDup(n);
+		if (this->p_name)
+			return (true);
 	}
+	return (false);
 }
 
-void			HandyJson::SetValStr(const char* s)
+bool			HandyJson::SetValStr(const char* s)
 {
 	if (!s)
-		return ;
-	if (this->p_value_as_str)
+		return (false);
+	if (this->GetValStr())
 	{
-		free(this->p_value_as_str);
+		delete (this->GetValStr());
 		this->p_value_as_str = this->StrDup(s);
+		if (this->p_value_as_str)
+			return (true);
 	}
-
+	return (false);
 }
 
-void			HandyJson::SetValInt(int i)
+bool			HandyJson::SetValInt(int i)
 {
 	this->p_value_as_int = i;
+	return (true);
 }
 
-void			HandyJson::SetValDbl(double d)
+bool			HandyJson::SetValDbl(double d)
 {
 	this->p_value_as_dbl = d;
+	return (true);
 }
 
 /* Main functions */
@@ -120,22 +126,28 @@ int				HandyJson::GetArraySize() const
 		i++;
 		c = c->GetNext();
 	}
-	return i;
+	return (i);
 }
 
 HandyJson*		HandyJson::GetArrayItem(int item) const
 {
 	HandyJson *c = this->GetChild();
-	while (c && item > 0) item--, c = c->GetNext();
-	return c;
+	
+	while (c && item > 0)
+	{
+		c = c->GetNext();
+		--item;
+	}
+	return (c);
 }
 
 HandyJson*		HandyJson::GetObjectItem(const char* string) const
 {
 	HandyJson* c = this->GetChild();
 	
-	while (c && this->StrCaseCmp(c->GetName(), string)) c = c->GetNext();
-	return c;
+	while (c && this->StrCaseCmp(c->GetName(), string))
+		c = c->GetNext();
+	return (c);
 }
 
 bool			HandyJson::AddItemToArray(HandyJson* item)
@@ -164,7 +176,7 @@ bool			HandyJson::AddItemToObject(const char* string, HandyJson* item)
 	if (!item)
 		return (false); 
 	if (item->GetName())
-		free(item->p_name);
+		delete (item->GetName());
 	item->p_name = this->StrDup(string);
 	
 	HandyJson* c = this->GetChild();
@@ -186,13 +198,17 @@ HandyJson*		HandyJson::DetachItemFromArray(int which)
 {
 	HandyJson* c = this->GetChild();
 	
-	while (c && which > 0) c = c->p_next, which--;
-	if (!c) return 0;
-	if (c->p_prev) c->p_prev->p_next = c->p_next;
-	if (c->p_next) c->p_next->p_prev = c->p_prev;
+	while (c && which > 0)
+	{
+		c = c->GetNext();
+		--which;
+	}
+	if (!c) return (0);
+	if (c->GetPrev()) c->p_prev->p_next = c->GetNext();
+	if (c->GetNext()) c->p_next->p_prev = c->GetPrev();
 	if (c == this->p_child) this->p_child = c->p_next;
 	c->p_prev = c->p_next = 0;
-	return c;
+	return (c);
 }
 
 void			HandyJson::DeleteItemFromArray(int which)
@@ -219,26 +235,35 @@ void			HandyJson::ReplaceItemInArray(int which, HandyJson* newitem)
 {
 	HandyJson* c = this->GetChild();
 
-	while (c && which > 0) c = c->p_next, which--;
+	while (c && which > 0)
+	{
+		c = c->GetNext();
+		--which;
+	}
 	if (!c)
 		return;
-	newitem->p_next = c->p_next;
-	newitem->p_prev = c->p_prev;
-	if (newitem->p_next) newitem->p_next->p_prev = newitem;
+	newitem->p_next = c->GetNext();
+	newitem->p_prev = c->GetPrev();
+	if (newitem->GetNext()) newitem->p_next->p_prev = newitem;
 	if (c == this->GetChild())
 		this->p_child = newitem;
 	else
 		newitem->p_prev->p_next = newitem;
-	c->p_next = c->p_prev = 0;
+	c->p_next = 0;
+	c->p_prev = 0;
 	delete (c);
 }
 
 void			HandyJson::ReplaceItemInObject(const char* string, HandyJson* newitem)
 {
-	int i=0;
-	HandyJson* c = this->p_child;
+	HandyJson* c = this->GetChild();
+	int i = 0;
 
-	while (c && this->StrCaseCmp(c->GetName(), string)) i++, c = c->p_next;
+	while (c && this->StrCaseCmp(c->GetName(), string))
+	{
+		c = c->GetNext();
+		++i;
+	}
 	if (c)
 	{
 		newitem->p_name = this->StrDup(string);
@@ -248,25 +273,24 @@ void			HandyJson::ReplaceItemInObject(const char* string, HandyJson* newitem)
 
 HandyJson*		HandyJson::Duplicate(bool recurse)
 {
-	HandyJson *newitem,*cptr,*nptr=0,*newchild;
+	HandyJson *newitem, *cptr, *nptr = 0, *newchild;
 
 	newitem = new HandyJson();
 	if (!newitem)
-		return 0;
-	/* Copy over all vars */
+		return (0);
 	newitem->p_type = this->GetType();
 	newitem->p_value_as_int = this->GetValInt();
 	newitem->p_value_as_dbl = this->GetValDbl();
 	if (this->GetValStr())
 	{
 		newitem->p_value_as_str = this->StrDup(this->GetValStr());
-		if (!newitem->GetValStr())	// If memoru fail
+		if (!newitem->GetValStr())
 		{
 			delete (newitem);
 			return (0);
 		}
 	}
-	if (this->GetName())	// If memory fail
+	if (this->GetName())
 	{
 		newitem->p_name = this->StrDup(this->GetName());
 		if (!newitem->GetName())
@@ -275,15 +299,14 @@ HandyJson*		HandyJson::Duplicate(bool recurse)
 			return (0);
 		}
 	}
-	/* If non-recursive, then we're done! */
+
 	if (recurse == false)
 		return (newitem);
 
-	/* Walk the ->next chain for the child. */
 	cptr = this->GetChild();
 	while (cptr)
 	{
-		newchild = cptr->Duplicate(true);		/* Duplicate (with recurse) each item in the ->next chain */
+		newchild = cptr->Duplicate(true);
 		if (!newchild)
 		{
 			delete (newitem);
@@ -294,13 +317,13 @@ HandyJson*		HandyJson::Duplicate(bool recurse)
 			nptr->p_next = newchild;
 			newchild->p_prev = nptr;
 			nptr = newchild;
-		}			/* If newitem->child already set, then crosswire ->prev and ->next and move on */
+		}
 		else
 		{
 			newitem->p_child = newchild;
 			nptr = newchild;
-		}					/* Set newitem->child and move to it */
-		cptr = cptr->p_next;
+		}
+		cptr = cptr->GetNext();
 	}
 	return (newitem);
 }
@@ -315,7 +338,6 @@ bool			HandyJson::ParseWithOpts(const char* value, const char** return_parse_end
 	if (!end)
 		return (false);
 
-	/* if we require null-terminated JSON without appended garbage, skip and then check for a null terminator */
 	if (require_null_terminated == true) 
 	{
 		end = this->Skip(end);
@@ -387,11 +409,12 @@ void			HandyJson::BuildInObject()
 /* Arrays building functions */
 void			HandyJson::BuildInIntArray(const int* numbers, int count)
 {
-	int i;
+	int			i;
+
 	HandyJson* n = 0;
 	HandyJson* p = 0;
 	this->BuildInArray();
-	for (i=0; i<count; ++i)
+	for (i = 0; i < count; ++i)
 	{
 		n = new HandyJson();
 		if (!n)
@@ -407,11 +430,12 @@ void			HandyJson::BuildInIntArray(const int* numbers, int count)
 
 void			HandyJson::BuildInFltArray(const float* numbers, int count)
 {
-	int i;
+	int			i;
+
 	HandyJson* n = 0;
 	HandyJson* p = 0;
 	this->BuildInArray();
-	for (i=0; i<count; ++i)
+	for (i = 0; i < count; ++i)
 	{
 		n = new HandyJson();
 		if (!n)
@@ -427,11 +451,12 @@ void			HandyJson::BuildInFltArray(const float* numbers, int count)
 
 void			HandyJson::BuildInDblArray(const double* numbers, int count)
 {
-	int i;
+	int			i;
+
 	HandyJson* n = 0;
 	HandyJson* p = 0;
 	this->BuildInArray();
-	for (i=0; i<count; ++i)
+	for (i = 0; i < count; ++i)
 	{
 		n = new HandyJson();
 		if (!n)
@@ -447,11 +472,12 @@ void			HandyJson::BuildInDblArray(const double* numbers, int count)
 
 void			HandyJson::BuildInStrArray(const char** strings, int count)
 {
-	int i;
+	int			i;
+
 	HandyJson* n = 0;
 	HandyJson* p = 0;
 	this->BuildInArray();
-	for (i=0; i<count; ++i)
+	for (i = 0; i < count; ++i)
 	{
 		n = new HandyJson();
 		if (!n)
@@ -473,11 +499,11 @@ const char*		HandyJson::GetErrorPtr(void)
 
 const char*		HandyJson::ParseNumber(const char* num)
 {
-	double	n = 0;
-	double	sign = 1;
-	double	scale = 0;
-	int		subscale = 0;
-	int		signsubscale = 1;
+	double		n = 0;
+	double		sign = 1;
+	double		scale = 0;
+	int			subscale = 0;
+	int			signsubscale = 1;
 
 	if (*num == '-')	{ sign = -1; ++num; }
 	if (*num == '0')	{ ++num; }
@@ -523,49 +549,78 @@ char*			HandyJson::PrintNumber() const
 
 	if (fabs(((double)this->p_value_as_int)-d) <= DBL_EPSILON && d <= INT_MAX && d >= INT_MIN)
 	{
-		str = (char*)malloc(21);			/* 2^64+1 can be represented in 21 chars. */
+		str = new char[21]();
 		if (str) sprintf(str, "%d", this->p_value_as_int);
 	}
 	else
 	{
-		str = (char*)malloc(64);	/* This is a nice tradeoff. */
+		str = new char[64]();
 		if (str)
 		{
-			if (fabs(floor(d) - d) <= DBL_EPSILON && fabs(d) < 1.0e60)sprintf(str, "%.0f", d);
-			else if (fabs(d) < 1.0e-6 || fabs(d) > 1.0e9)			sprintf(str, "%e", d);
-			else												sprintf(str, "%f", d);
+			if (fabs(floor(d) - d) <= DBL_EPSILON && fabs(d) < 1.0e60) sprintf(str, "%.0f", d);
+			else if (fabs(d) < 1.0e-6 || fabs(d) > 1.0e9) sprintf(str, "%e", d);
+			else sprintf(str, "%f", d);
 		}
 	}
-	return str;
+	return (str);
 }
 
 unsigned		HandyJson::ParseHex4(const char* str)
 {
 	unsigned h = 0;
-	if (*str>='0' && *str<='9') h+=(*str)-'0'; else if (*str>='A' && *str<='F') h+=10+(*str)-'A'; else if (*str>='a' && *str<='f') h+=10+(*str)-'a'; else return 0;
-	h=h<<4;str++;
-	if (*str>='0' && *str<='9') h+=(*str)-'0'; else if (*str>='A' && *str<='F') h+=10+(*str)-'A'; else if (*str>='a' && *str<='f') h+=10+(*str)-'a'; else return 0;
-	h=h<<4;str++;
-	if (*str>='0' && *str<='9') h+=(*str)-'0'; else if (*str>='A' && *str<='F') h+=10+(*str)-'A'; else if (*str>='a' && *str<='f') h+=10+(*str)-'a'; else return 0;
-	h=h<<4;str++;
-	if (*str>='0' && *str<='9') h+=(*str)-'0'; else if (*str>='A' && *str<='F') h+=10+(*str)-'A'; else if (*str>='a' && *str<='f') h+=10+(*str)-'a'; else return 0;
-	return h;
+
+	if (*str >= '0' && *str <= '9') h += (*str) - '0';
+	else if (*str >= 'A' && *str <= 'F') h += 10 + (*str) - 'A';
+	else if (*str >= 'a' && *str <= 'f') h += 10 + (*str) - 'a';
+	else return (0);
+
+	h = h << 4;
+	++str;
+
+	if (*str >= '0' && *str <= '9') h += (*str) - '0';
+	else if (*str >= 'A' && *str <= 'F') h += 10 + (*str) - 'A';
+	else if (*str >= 'a' && *str <= 'f') h += 10 + (*str) - 'a';
+	else return (0);
+
+	h = h << 4;
+	++str;
+
+	if (*str >= '0' && *str <= '9') h += (*str) - '0';
+	else if (*str >= 'A' && *str <= 'F') h += 10 + (*str) - 'A';
+	else if (*str >= 'a' && *str <= 'f') h += 10 + (*str) - 'a';
+	else return (0);
+
+	h = h << 4;
+	++str;
+	
+	if (*str >= '0' && *str <= '9') h += (*str) - '0';
+	else if (*str >= 'A' && *str <= 'F') h += 10 + (*str) - 'A';
+	else if (*str >= 'a' && *str <= 'f') h += 10 + (*str) - 'a';
+	else return (0);
+
+	return (h);
 }
 
 const char*		HandyJson::ParseString(const char* str)
 {
-	const char *ptr=str+1;char *ptr2;char *out;int len=0;unsigned uc,uc2;
-	if (*str!='\"') {HandyJson::sp_err = str; return 0;}	/* not a string! */
+	const char*	ptr = str + 1;
+	char*		ptr2;
+	char*		out;
+	int			len = 0;
+	unsigned	uc,uc2;
+
+	if (*str!='\"')	{ HandyJson::sp_err = str; return (0); }
 	
-	while (*ptr!='\"' && *ptr && ++len) if (*ptr++ == '\\') ptr++;	/* Skip escaped quotes. */
+	while (*ptr != '\"' && *ptr && ++len) if (*ptr++ == '\\') ptr++;
 	
-	out=(char*)malloc(len+1);	/* This is how long we need for the string, roughly. */
-	if (!out) return 0;
+	out = new char[len + 1]();
+	if (!out) return (0);
 	
-	ptr = str + 1; ptr2 = out;
+	ptr = str + 1;
+	ptr2 = out;
 	while (*ptr!='\"' && *ptr)
 	{
-		if (*ptr!='\\') *ptr2++=*ptr++;
+		if (*ptr != '\\') *ptr2++ = *ptr++;
 		else
 		{
 			ptr++;
@@ -576,60 +631,75 @@ const char*		HandyJson::ParseString(const char* str)
 				case 'n': *ptr2++='\n';	break;
 				case 'r': *ptr2++='\r';	break;
 				case 't': *ptr2++='\t';	break;
-				case 'u':	 /* transcode utf16 to utf8. */
-					uc= this->ParseHex4(ptr+1);ptr+=4;	/* get the unicode char. */
-
-					if ((uc>=0xDC00 && uc<=0xDFFF) || uc==0)	break;	/* check for invalid.	*/
-
-					if (uc>=0xD800 && uc<=0xDBFF)	/* UTF16 surrogate pairs.	*/
+				case 'u':
+					uc = this->ParseHex4(ptr + 1); ptr += 4;
+					if ((uc >= 0xDC00 && uc <= 0xDFFF) || uc == 0) break;
+					if (uc >= 0xD800 && uc <= 0xDBFF)
 					{
-						if (ptr[1]!='\\' || ptr[2]!='u')	break;	/* missing second-half of surrogate.	*/
-						uc2=this->ParseHex4(ptr+3);ptr+=6;
-						if (uc2<0xDC00 || uc2>0xDFFF)		break;	/* invalid second-half of surrogate.	*/
-						uc=0x10000 + (((uc&0x3FF)<<10) | (uc2&0x3FF));
+						if (ptr[1] != '\\' || ptr[2] != 'u') break;
+						uc2 = this->ParseHex4(ptr+3); ptr += 6;
+						if (uc2 < 0xDC00 || uc2 > 0xDFFF) break;
+						uc = 0x10000 + (((uc & 0x3FF) << 10) | (uc2 & 0x3FF));
 					}
-
-					len = 4;if (uc<0x80) len=1;else if (uc<0x800) len=2;else if (uc<0x10000) len=3; ptr2+=len;
+					len = 4;
+					if (uc < 0x80) len = 1;
+					else if (uc < 0x800) len = 2;
+					else if (uc < 0x10000) len = 3;
+					ptr2 += len;
 					
 					switch (len) {
-						case 4: *--ptr2 =((uc | 0x80) & 0xBF); uc >>= 6;
-						case 3: *--ptr2 =((uc | 0x80) & 0xBF); uc >>= 6;
-						case 2: *--ptr2 =((uc | 0x80) & 0xBF); uc >>= 6;
-						case 1: *--ptr2 =(uc | HandyJson::sp_firstByteMark[len]);
+						case 4: *--ptr2 = ((uc | 0x80) & 0xBF); uc >>= 6;
+						case 3: *--ptr2 = ((uc | 0x80) & 0xBF); uc >>= 6;
+						case 2: *--ptr2 = ((uc | 0x80) & 0xBF); uc >>= 6;
+						case 1: *--ptr2 = (uc | HandyJson::sp_firstByteMark[len]);
 					}
 					ptr2 += len;
 					break;
-				default:  *ptr2++=*ptr; break;
+				default: 
+					*ptr2++ = *ptr; 
+					break;
 			}
 			ptr++;
 		}
 	}
-	*ptr2=0;
+	*ptr2 = 0;
 	if (*ptr=='\"') ptr++;
-	this->p_value_as_str=out;
+	this->p_value_as_str = out;
 	this->p_type = HandyJson::eTypes::json_string;
 	return (ptr);
 }
 
 char*			HandyJson::PrintStringPtr(const char* str) const
 {
-	const char *ptr;char *ptr2,*out;int len=0;unsigned char token;
+	const char*		ptr;
+	char*			ptr2, *out;
+	int				len = 0;
+	unsigned char	token;
 	
-	if (!str) return this->StrDup("");
-	ptr=str;while ((token=*ptr) && ++len) {if (strchr("\"\\\b\f\n\r\t",token)) len++; else if (token<32) len+=5;ptr++;}
-	
-	out=(char*)malloc(len+3);
-	if (!out) return 0;
+	if (!str) return (0);
+	ptr = str;
+	while ((token = *ptr) && ++len) 
+	{
+		if (strchr("\"\\\b\f\n\r\t", token))
+			len++;
+		else if (token < 32) 
+			len += 5;
+		ptr++;
+	}
+	out = new char[len + 3]();
+	if (!out) return (0);
 
-	ptr2=out;ptr=str;
-	*ptr2++='\"';
+	ptr2 = out;
+	ptr = str;
+	*ptr2++ = '\"';
 	while (*ptr)
 	{
-		if ((unsigned char)*ptr>31 && *ptr!='\"' && *ptr!='\\') *ptr2++=*ptr++;
+		if ((unsigned char)*ptr > 31 && *ptr != '\"' && *ptr != '\\')
+			*ptr2++ = *ptr++;
 		else
 		{
-			*ptr2++='\\';
-			switch (token=*ptr++)
+			*ptr2++ = '\\';
+			switch (token = *ptr++)
 			{
 				case '\\':	*ptr2++='\\';	break;
 				case '\"':	*ptr2++='\"';	break;
@@ -638,12 +708,16 @@ char*			HandyJson::PrintStringPtr(const char* str) const
 				case '\n':	*ptr2++='n';	break;
 				case '\r':	*ptr2++='r';	break;
 				case '\t':	*ptr2++='t';	break;
-				default: sprintf(ptr2,"u%04x",token);ptr2+=5;	break;	/* escape and print */
+				default:
+					sprintf(ptr2, "u%04x", token);
+					ptr2 += 5;
+					break;
 			}
 		}
 	}
-	*ptr2++='\"';*ptr2++=0;
-	return out;
+	*ptr2++  ='\"';
+	*ptr2++ = 0;
+	return (out);
 }
 
 char*			HandyJson::PrintString() const
@@ -653,230 +727,285 @@ char*			HandyJson::PrintString() const
 
 const char*		HandyJson::ParseValue(const char* value)
 {
-	if (!value)						return 0;	/* Fail on null. */
-	if (!strncmp(value,"null",4))	{ this->p_type = HandyJson::eTypes::json_null;	return value+4; }
-	if (!strncmp(value,"false",5))	{ this->p_type = HandyJson::eTypes::json_false; return value+5; }
-	if (!strncmp(value,"true",4))	{ this->p_type = HandyJson::eTypes::json_true;	this->p_value_as_int = 1;	return value+4; }
-	if (*value=='\"')				{ return this->ParseString(value); }
-	if (*value=='-' || (*value>='0' && *value<='9'))	{ return this->ParseNumber(value); }
-	if (*value=='[')				{ return this->ParseArray(value); }
-	if (*value=='{')				{ return this->ParseObject(value); }
+	if (!value)							return (0);
+	if (!strncmp(value, "null", 4))		{ this->p_type = HandyJson::eTypes::json_null; return (value + 4); }
+	if (!strncmp(value, "false", 5))	{ this->p_type = HandyJson::eTypes::json_false; return (value + 5); }
+	if (!strncmp(value, "true", 4))		{ this->p_type = HandyJson::eTypes::json_true; this->p_value_as_int = 1; return (value + 4); }
+	if (*value == '\"')					{ return (this->ParseString(value)); }
+	if (*value == '-' || (*value >= '0' && *value <= '9')) { return (this->ParseNumber(value)); }
+	if (*value == '[')					{ return (this->ParseArray(value)); }
+	if (*value == '{')					{ return (this->ParseObject(value)); }
 
-	HandyJson::sp_err = value; return 0;	/* failure. */
+	HandyJson::sp_err = value;
+	return (0);
 }
 
 char*			HandyJson::PrintValue(int depth, int fmt) const
 {
-	char *out=0;
-	switch ((this->GetType())&255) // why le &255 
+	char*		out = 0;
+	switch (this->GetType())
 	{
 	case HandyJson::eTypes::json_null	:		out = this->StrDup("null");	break;
-	case HandyJson::eTypes::json_false	:		out = this->StrDup("false");break;
+	case HandyJson::eTypes::json_false	:		out = this->StrDup("false"); break;
 	case HandyJson::eTypes::json_true	:		out = this->StrDup("true"); break;
-	case HandyJson::eTypes::json_number	:		out = this->PrintNumber();break;
-	case HandyJson::eTypes::json_string	:		out = this->PrintString();break;
-	case HandyJson::eTypes::json_array	:		out = this->PrintArray(depth,fmt);break;
-	case HandyJson::eTypes::json_object	:		out = this->PrintObject(depth,fmt);break;
+	case HandyJson::eTypes::json_number	:		out = this->PrintNumber(); break;
+	case HandyJson::eTypes::json_string	:		out = this->PrintString(); break;
+	case HandyJson::eTypes::json_array	:		out = this->PrintArray(depth, fmt); break;
+	case HandyJson::eTypes::json_object	:		out = this->PrintObject(depth, fmt); break;
 	}
-	return out;
+	return (out);
 }
 
 const char*		HandyJson::ParseArray(const char* value)
 {
 	HandyJson*	child;
 
-	if (*value!='[')
+	if (*value != '[')
 	{
 		HandyJson::sp_err = value;
 		return (0);
-	}	/* not an array! */
+	}
 	this->p_type = HandyJson::eTypes::json_array;
 	value = this->Skip(value + 1);
-	if (*value==']')
-		return (value + 1);	/* empty array. */
+	if (*value == ']')
+		return (value + 1);
 
 	this->p_child = child = new HandyJson();
 	if (!this->p_child)
-		return (0);		 /* memory fail */
-	value = this->Skip(child->ParseValue(this->Skip(value)));	/* skip any spacing, get the value. */
+		return (0);
+	value = this->Skip(child->ParseValue(this->Skip(value)));
 	if (!value)
-		return 0;
+		return (0);
 	while (*value == ',')
 	{
 		HandyJson *new_item;
 
 		if (!(new_item = new HandyJson()))
-			return 0; 	/* memory fail */
+			return (0);
 		child->p_next = new_item;
 		new_item->p_prev = child;
 		child = new_item;
-		value = this->Skip(child->ParseValue(this->Skip(value+1)));
+		value = this->Skip(child->ParseValue(this->Skip(value + 1)));
 		if (!value)
-			return (0);	/* memory fail */
+			return (0);
 	}
 	if (*value == ']')
-		return (value + 1);	/* end of array */
+		return (value + 1);
 	HandyJson::sp_err = value;
-	return (0);	/* malformed. */
+	return (0);
 }
 
 char*			HandyJson::PrintArray(int depth, int fmt) const
 {
-	char **entries;
-	char *out=0,*ptr,*ret;int len=5;
-	HandyJson* child = this->GetChild();
-	int numentries=0,i=0,fail=0;
+	char**		entries;
+	char*		out = 0, *ptr, *ret;
+	int			len = 5;
+	HandyJson*	child = this->GetChild();
+	int			numentries = 0, i = 0, fail = 0;
 	
-	/* How many entries in the array? */
-	while (child) ++numentries,child = child->p_next;
-	/* Explicitly handle numentries==0 */
+	while (child) ++numentries, child = child->p_next;
 	if (!numentries)
 	{
-		out=(char*)malloc(3);
-		if (out) strcpy(out,"[]");
-		return out;
+		out = new char[3]();
+		if (out) strcpy(out, "[]");
+		out[2] = 0;
+		return (out);
 	}
-	/* Allocate an array to hold the values for each */
-	entries = (char**)malloc(numentries * sizeof(char*));
-	if (!entries) return 0;	// Memory fail
+	entries = new char*[numentries * sizeof(char*)]();
+	if (!entries) return (0);
 	memset(entries, 0, numentries * sizeof(char*));
-	/* Retrieve all the results: */
 	child = this->GetChild();
 	while (child && !fail)
 	{
 		ret = child->PrintValue(depth + 1, fmt);
-		entries[i++]=ret;
-		if (ret) len += strlen(ret) + 2 + (fmt ? 1 : 0); else fail = 1;
-		child=child->GetNext();
+		entries[i++] = ret;
+		if (ret) len += strlen(ret) + 2 + (fmt ? 1 : 0);
+		else fail = 1;
+		child = child->GetNext();
 	}
-	
-	/* If we didn't fail, try to malloc the output string */
-	if (!fail) out = (char*)malloc(len);
-	/* If that fails, we fail. */
-	if (!out) fail=1;
+	if (!fail) out = new char[len]();
+	if (!out) fail = 1;
 
-	/* Handle failure. */
 	if (fail)
 	{
-		for (i=0;i<numentries;i++) if (entries[i]) free(entries[i]);
-		free(entries);
-		return 0;
+		for (i = 0; i < numentries; ++i) if (entries[i]) delete (entries[i]);
+		delete (entries);
+		return (0);
 	}
 	
-	/* Compose the output array. */
-	*out='[';
-	ptr=out+1;*ptr=0;
-	for (i=0;i<numentries;i++)
+	*out = '[';
+	ptr = out + 1;
+	*ptr = 0;
+	for (i = 0; i < numentries; ++i)
 	{
-		strcpy(ptr,entries[i]);ptr+=strlen(entries[i]);
-		if (i!=numentries-1) {*ptr++=',';if(fmt)*ptr++=' ';*ptr=0;}
-		free(entries[i]);
+		strcpy(ptr, entries[i]);
+		ptr += strlen(entries[i]);
+		if (i != numentries - 1)
+		{
+			*ptr++ =',';
+			if (fmt)
+				*ptr++ = ' ';
+			*ptr = 0;
+		}
+		delete (entries[i]);
 	}
-	free(entries);
-	*ptr++=']';*ptr++=0;
-	return out;
+	delete (entries);
+	*ptr++ = ']';
+	*ptr++ = 0;
+	return (out);
 }
 
 const char*		HandyJson::ParseObject(const char* value)
 {
 	HandyJson*	child;
-	if (*value != '{')	{ HandyJson::sp_err = value;return 0;}	/* not an object! */
+
+	if (*value != '{')	{ HandyJson::sp_err = value; return (0); }
 	
 	this->p_type = HandyJson::eTypes::json_object;
 	value = this->Skip(value + 1);
-	if (*value == '}') return value + 1;	/* empty array. */
+	if (*value == '}')
+		return (value + 1);
 	
 	this->p_child = child = new HandyJson();
-	if (!this->GetChild()) return 0;
+	if (!this->GetChild()) return (0);
 	value = this->Skip(child->ParseString(this->Skip(value)));
-	if (!value) return 0;
-	child->p_name = child->p_value_as_str;child->p_value_as_str = 0;
-	if (*value!=':') {HandyJson::sp_err = value;return 0;}	/* fail! */
-	value = this->Skip(child->ParseValue(this->Skip(value + 1)));	/* skip any spacing, get the value. */
-	if (!value) return 0;
+	if (!value)
+		return (0);
+	child->p_name = child->p_value_as_str;
+	child->p_value_as_str = 0;
+	if (*value!=':') { HandyJson::sp_err = value; return (0); }
+	value = this->Skip(child->ParseValue(this->Skip(value + 1)));
+	if (!value) 
+		return (0);
 	
 	while (*value==',')
 	{
 		HandyJson *new_item;
-		if (!(new_item=new HandyJson()))	return 0; /* memory fail */
-		child->p_next = new_item; new_item->p_prev = child; child = new_item;
-		value = this->Skip(child->ParseValue(this->Skip(value+1)));
-		if (!value) return 0;
-		child->p_name = child->p_value_as_str; child->p_value_as_str=0;
-		if (*value!=':') {HandyJson::sp_err = value;return 0;}	/* fail! */
-		value = this->Skip(child->ParseValue(this->Skip(value+1)));	/* skip any spacing, get the value. */
-		if (!value) return 0;
+
+		if (!(new_item = new HandyJson())) return (0);
+		child->p_next = new_item;
+		new_item->p_prev = child;
+		child = new_item;
+		value = this->Skip(child->ParseValue(this->Skip(value + 1)));
+		if (!value)
+			return (0);
+		child->p_name = child->p_value_as_str;
+		child->p_value_as_str = 0;
+		if (*value!=':') { HandyJson::sp_err = value; return (0); }
+		value = this->Skip(child->ParseValue(this->Skip(value + 1)));
+		if (!value)
+			return (0);
 	}
 	
-	if (*value=='}') return value+1;	/* end of array */
-	HandyJson::sp_err = value;return 0;	/* malformed. */
+	if (*value == '}')
+		return (value + 1);
+	HandyJson::sp_err = value;
+	return (0);
 }
 
 char*			HandyJson::PrintObject(int depth, int fmt) const
 {
-	char **entries=0, **names=0;
-	char *out=0,*ptr,*ret,*str;int len=7,i=0,j;
-	HandyJson* child = this->GetChild();
-	int numentries=0,fail=0;
-	/* Count the number of entries. */
-	while (child) numentries++,child = child->GetNext();
-	/* Explicitly handle empty object case */
+	char**		entries = 0, **names = 0;
+	char*		out = 0, *ptr, *ret, *str;
+	int			len = 7, i = 0, j;
+	HandyJson*	child = this->GetChild();
+	int			numentries = 0, fail = 0;
+
+	while (child) numentries++, child = child->GetNext();
 	if (!numentries)
 	{
-		out = (char*)malloc(fmt?depth+4:3);
-		if (!out)	return 0;
-		ptr=out;*ptr++='{';
-		if (fmt) {*ptr++='\n';for (i=0;i<depth-1;i++) *ptr++='\t';}
-		*ptr++='}';*ptr++=0;
-		return out;
+		out = new char[fmt ? depth + 4 : 3]();
+		if (!out)
+			return (0);
+		ptr = out;
+		*ptr++ = '{';
+		if (fmt)
+		{ 
+			*ptr++ = '\n';
+			for (i = 0; i < depth - 1; ++i)
+				*ptr++ = '\t';
+		}
+		*ptr++ = '}';
+		*ptr++ = 0;
+		return (out);
 	}
-	/* Allocate space for the names and the objects */
-	entries = (char**)malloc(numentries * sizeof(char*));
-	if (!entries) return 0;
-	names = (char**)malloc(numentries * sizeof(char*));
-	if (!names) {free(entries);return 0;}
-	memset(entries,0,sizeof(char*)*numentries);
-	memset(names,0,sizeof(char*)*numentries);
-
-	/* Collect all the results into our arrays: */
-	child = this->GetChild(); depth++;if (fmt) len+=depth;
+	entries = new char*[numentries * sizeof(char*)]();
+	if (!entries) return (0);
+	names = new char*[numentries * sizeof(char*)]();
+	if (!names)
+	{ 
+		delete (entries); 
+		return (0); 
+	}
+	memset(entries, 0, sizeof(char*) * numentries);
+	memset(names, 0, sizeof(char*) * numentries);
+	
+	child = this->GetChild();
+	++depth;
+	if (fmt)
+		len += depth;
 	while (child)
 	{
 		names[i] = str = child->PrintStringPtr(child->GetName());
-		entries[i++] = ret = child->PrintValue(depth,fmt);
-		if (str && ret) len+=strlen(ret)+strlen(str)+2+(fmt?2+depth:0); else fail=1;
-		child=child->GetNext();
+		entries[i++] = ret = child->PrintValue(depth, fmt);
+		if (str && ret)
+			len += strlen(ret) + strlen(str) + 2 + (fmt ? 2 + depth : 0);
+		else
+			fail = 1;
+		child = child->GetNext();
 	}
 	
-	/* Try to allocate the output string */
-	if (!fail) out=(char*)malloc(len);
-	if (!out) fail=1;
+	if (!fail) out = new char[len]();
+	if (!out) fail = 1;
 
-	/* Handle failure */
 	if (fail)
 	{
-		for (i=0;i<numentries;i++) {if (names[i]) free(names[i]);if (entries[i]) free(entries[i]);}
-		free(names);free(entries);
-		return 0;
+		for (i = 0; i < numentries; ++i)
+		{
+			if (names[i])
+				delete (names[i]);
+			if (entries[i])
+				delete (entries[i]);
+		}
+		delete (names);
+		delete (entries);
+		return (0);
 	}
 	
-	/* Compose the output: */
-	*out='{';ptr=out+1;if (fmt)*ptr++='\n';*ptr=0;
-	for (i=0;i<numentries;i++)
+	*out = '{';
+	ptr = out + 1;
+	if (fmt)
+		*ptr++ = '\n';
+	*ptr = 0;
+	for (i = 0; i< numentries; ++i)
 	{
-		if (fmt) for (j=0;j<depth;j++) *ptr++='\t';
-		strcpy(ptr,names[i]);ptr+=strlen(names[i]);
-		*ptr++=':';if (fmt) *ptr++='\t';
-		strcpy(ptr,entries[i]);ptr+=strlen(entries[i]);
-		if (i!=numentries-1) *ptr++=',';
-		if (fmt) *ptr++='\n';*ptr=0;
-		free(names[i]);free(entries[i]);
+		if (fmt)
+			for (j = 0; j < depth; ++j)
+				*ptr++ = '\t';
+		strcpy(ptr, names[i]);
+		ptr += strlen(names[i]);
+		*ptr++ = ':';
+		if (fmt)
+			*ptr++ = '\t';
+		strcpy(ptr, entries[i]);
+		ptr += strlen(entries[i]);
+		if (i != numentries - 1)
+			*ptr++ = ',';
+		if (fmt)
+			*ptr++ = '\n';
+		*ptr = 0;
+		delete (names[i]);
+		delete (entries[i]);
 	}
 	
-	free(names);free(entries);
-	if (fmt) for (i=0;i<depth-1;i++) *ptr++='\t';
-	*ptr++='}';*ptr++=0;
-	return out;
+	delete (names);
+	delete (entries);
+	if (fmt)
+		for (i = 0; i < depth - 1; ++i)
+			*ptr++ = '\t';
+	*ptr++ = '}';
+	*ptr++ = 0;
+	return (out);
 }
 
 void			HandyJson::SuffixItem(HandyJson* item)
@@ -896,7 +1025,7 @@ const char*		HandyJson::Skip(const char* in)
 int				HandyJson::StrCaseCmp(const char* s1, const char* s2)
 {
 	if (!s1)
-		return ((s1 == s2) ? 0 : 1);	// If both string are null, return 0.
+		return ((s1 == s2) ? 0 : 1);
 	if (!s2)
 		return (1);
 	for	(; tolower(*s1) == tolower(*s2); ++s1, ++s2)
@@ -912,9 +1041,11 @@ char*			HandyJson::StrDup(const char* s)
 	size_t		len;
     char*		copy;
 
+	if (!s)
+		return (0);
     len = strlen(s) + 1;
-    if (!(copy = (char*)malloc(len)))
-		return (0);						// Memory horribly failed :(
+    if (!(copy = new char[len]()))
+		return (0);
 	memset(copy, 0, len);
     memcpy(copy, s, len);
     return (copy);
