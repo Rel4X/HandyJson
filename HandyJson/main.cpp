@@ -150,7 +150,7 @@ bool			BuildingHandyJsonTree()
 		| Adding a new array item in the root |
 		+-------------------------------------+
 												*/
-	HandyJson*		new_array = new HandyJson(HandyJson::eTypes::json_array);
+    HandyJson*		new_array = new HandyJson(json_array);
 	if (root->AddItemToObject("Array", new_array))
 		std::cout << "Array added to object." << std::endl;
 	else { std::cout << "Array not added to object." << std::endl; return (false); }
@@ -207,7 +207,7 @@ bool			BuildingHandyJsonTree()
 
 // Tester les detach
 // Tester le replace
-int				main(int ac, char** av)
+int				main()
 {
 	
 	HandlingHandyJsonItems();

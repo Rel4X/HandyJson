@@ -37,27 +37,26 @@
 #include	<float.h>
 #include	<limits.h>
 
+enum	eTypes
+{
+    json_false		=	0,
+    json_true		=	1,
+    json_null		=	2,
+    json_number		=	3,
+    json_string		=	4,
+    json_array		=	5,
+    json_object		=	6
+};
+
 class		HandyJson
 {
-	/* Json types */
-public:
-	enum	eTypes
-	{
-		json_false		=	0,
-		json_true		=	1,
-		json_null		=	2,
-		json_number		=	3,
-		json_string		=	4,
-		json_array		=	5,
-		json_object		=	6
-	};
-
+	/* Json types */	
 private:
 	static const char*			sp_err;
 	static const unsigned char	sp_firstByteMark[7];
 
 private:
-	HandyJson::eTypes	p_type;				// The type of the node (Look above).
+    eTypes	p_type;				// The type of the node (Look above).
 	char*				p_name;				// The name of the node. Needed if the node is to be inserted in an object.
 	HandyJson*			p_next;				// The following node.
 	HandyJson*			p_prev;				// The previous node.
@@ -68,13 +67,13 @@ private:
 
 public:
 	HandyJson(void);
-	HandyJson(HandyJson::eTypes);
+    HandyJson(eTypes);
 	HandyJson(const HandyJson&);
 	~HandyJson(void);
 
 public:
 	/* Basics getters */														//
-	HandyJson::eTypes	GetType() const		{ return (this->p_type); }			//
+    eTypes	GetType() const		{ return (this->p_type); }			//
 	const char*			GetName() const		{ return (this->p_name); }			// Get stuff.
 	HandyJson*			GetNext() const		{ return (this->p_next); }			//
 	HandyJson*			GetPrev() const		{ return (this->p_prev); }			//

@@ -47,7 +47,7 @@ HandyJson::HandyJson(void) :
 	this->BuildInObject();
 }
 
-HandyJson::HandyJson(HandyJson::eTypes t) :
+HandyJson::HandyJson(eTypes t) :
 	p_name(0), p_next(0), p_prev(0), p_child(0), p_value_as_str(0), p_value_as_int(0), p_value_as_dbl(0)
 {
 	this->p_type = t;
@@ -154,7 +154,7 @@ bool			HandyJson::AddItemToArray(HandyJson* item)
 {
 	HandyJson* c = this->GetChild();
 
-	if (this->GetType() != HandyJson::eTypes::json_array)
+    if (this->GetType() != json_array)
 		return (false);
 	if (!item)
 		return (false);
@@ -171,7 +171,7 @@ bool			HandyJson::AddItemToArray(HandyJson* item)
 
 bool			HandyJson::AddItemToObject(const char* string, HandyJson* item)
 {
-	if (this->GetType() != HandyJson::eTypes::json_object)
+    if (this->GetType() != json_object)
 		return (false);
 	if (!item)
 		return (false); 
@@ -370,40 +370,40 @@ char*			HandyJson::PrintUnformated()
 /* Types functions */
 void			HandyJson::BuildInNull()
 {
-	this->p_type = HandyJson::eTypes::json_null;
+    this->p_type = json_null;
 }
 
 void			HandyJson::BuildInTrue()
 {
-	this->p_type = HandyJson::eTypes::json_true;
+    this->p_type = json_true;
 }
 
 void			HandyJson::BuildInFalse()
 {
-	this->p_type = HandyJson::eTypes::json_false;
+    this->p_type = json_false;
 }
 
 void			HandyJson::BuildInNumber(double number)
 {
-	this->p_type = HandyJson::eTypes::json_number;
+    this->p_type = json_number;
 	this->p_value_as_dbl = number;
 	this->p_value_as_int = (int)number;
 }
 
 void			HandyJson::BuildInString(const char* string)
 {
-	this->p_type = HandyJson::eTypes::json_string;
+    this->p_type = json_string;
 	this->p_value_as_str = this->StrDup(string);
 }
 
 void			HandyJson::BuildInArray()
 {
-	this->p_type = HandyJson::eTypes::json_array;
+    this->p_type = json_array;
 }
 
 void			HandyJson::BuildInObject()
 {
-	this->p_type = HandyJson::eTypes::json_object;
+    this->p_type = json_object;
 }
 
 /* Arrays building functions */
@@ -538,7 +538,7 @@ const char*		HandyJson::ParseNumber(const char* num)
 	n = sign * n * pow(10.0, (scale + subscale * signsubscale));
 	this->p_value_as_int = (int)n;
 	this->p_value_as_dbl = n;
-	this->p_type = HandyJson::eTypes::json_number;
+    this->p_type = json_number;
 	return (num);
 }
 
@@ -665,7 +665,7 @@ const char*		HandyJson::ParseString(const char* str)
 	*ptr2 = 0;
 	if (*ptr=='\"') ptr++;
 	this->p_value_as_str = out;
-	this->p_type = HandyJson::eTypes::json_string;
+    this->p_type = json_string;
 	return (ptr);
 }
 
@@ -728,9 +728,9 @@ char*			HandyJson::PrintString() const
 const char*		HandyJson::ParseValue(const char* value)
 {
 	if (!value)							return (0);
-	if (!strncmp(value, "null", 4))		{ this->p_type = HandyJson::eTypes::json_null; return (value + 4); }
-	if (!strncmp(value, "false", 5))	{ this->p_type = HandyJson::eTypes::json_false; return (value + 5); }
-	if (!strncmp(value, "true", 4))		{ this->p_type = HandyJson::eTypes::json_true; this->p_value_as_int = 1; return (value + 4); }
+    if (!strncmp(value, "null", 4))		{ this->p_type = json_null; return (value + 4); }
+    if (!strncmp(value, "false", 5))	{ this->p_type = json_false; return (value + 5); }
+    if (!strncmp(value, "true", 4))		{ this->p_type = json_true; this->p_value_as_int = 1; return (value + 4); }
 	if (*value == '\"')					{ return (this->ParseString(value)); }
 	if (*value == '-' || (*value >= '0' && *value <= '9')) { return (this->ParseNumber(value)); }
 	if (*value == '[')					{ return (this->ParseArray(value)); }
@@ -745,13 +745,13 @@ char*			HandyJson::PrintValue(int depth, int fmt) const
 	char*		out = 0;
 	switch (this->GetType())
 	{
-	case HandyJson::eTypes::json_null	:		out = this->StrDup("null");	break;
-	case HandyJson::eTypes::json_false	:		out = this->StrDup("false"); break;
-	case HandyJson::eTypes::json_true	:		out = this->StrDup("true"); break;
-	case HandyJson::eTypes::json_number	:		out = this->PrintNumber(); break;
-	case HandyJson::eTypes::json_string	:		out = this->PrintString(); break;
-	case HandyJson::eTypes::json_array	:		out = this->PrintArray(depth, fmt); break;
-	case HandyJson::eTypes::json_object	:		out = this->PrintObject(depth, fmt); break;
+    case json_null	:		out = this->StrDup("null");	break;
+    case json_false	:		out = this->StrDup("false"); break;
+    case json_true	:		out = this->StrDup("true"); break;
+    case json_number	:		out = this->PrintNumber(); break;
+    case json_string	:		out = this->PrintString(); break;
+    case json_array	:		out = this->PrintArray(depth, fmt); break;
+    case json_object	:		out = this->PrintObject(depth, fmt); break;
 	}
 	return (out);
 }
@@ -765,7 +765,7 @@ const char*		HandyJson::ParseArray(const char* value)
 		HandyJson::sp_err = value;
 		return (0);
 	}
-	this->p_type = HandyJson::eTypes::json_array;
+    this->p_type = json_array;
 	value = this->Skip(value + 1);
 	if (*value == ']')
 		return (value + 1);
@@ -861,7 +861,7 @@ const char*		HandyJson::ParseObject(const char* value)
 
 	if (*value != '{')	{ HandyJson::sp_err = value; return (0); }
 	
-	this->p_type = HandyJson::eTypes::json_object;
+    this->p_type = json_object;
 	value = this->Skip(value + 1);
 	if (*value == '}')
 		return (value + 1);
